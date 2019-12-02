@@ -1,6 +1,6 @@
 extern crate aoc_2019;
-use aoc_2019::day1::calculate_fuel;
+use aoc_2019::day1::day_1;
 
 fn main() {
-    println!("{}", calculate_fuel());
+    println!("Day 1: {}", day_1());
 }
