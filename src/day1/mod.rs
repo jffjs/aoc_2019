@@ -1,12 +1,8 @@
-use std::fs::File;
+use crate::util::read_input;
 use std::io::{self, BufRead};
-use std::path::Path;
 
 pub fn day_1() {
-    let path = Path::new("src/day1/input.txt");
-    let file = File::open(path).unwrap();
-
-    let reader = io::BufReader::new(file);
+    let reader = io::BufReader::new(read_input(1));
 
     let fuel = reader
         .lines()

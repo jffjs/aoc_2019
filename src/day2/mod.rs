@@ -1,10 +1,8 @@
-use std::fs::File;
+use crate::util::read_input;
 use std::io::prelude::*;
-use std::path::Path;
 
 pub fn day_2() {
-    let path = Path::new("src/day2/input.txt");
-    let mut file = File::open(path).unwrap();
+    let mut file = read_input(2);
 
     let mut buf = String::new();
     file.read_to_string(&mut buf).unwrap();
