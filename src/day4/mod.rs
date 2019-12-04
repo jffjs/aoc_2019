@@ -30,7 +30,7 @@ pub fn day_4() {
         }
     }
 
-    println!("Day 4-1: {}", possible_codes);
+    println!("Day 4-2: {}", possible_codes);
 }
 
 fn has_two_adjacent(code: &str) -> bool {
