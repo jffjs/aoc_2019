@@ -71,14 +71,6 @@ fn find_group(idx: usize, code: &str, mut group: String) -> String {
 
 fn get_groups(code: &str) -> Vec<String> {
     let mut groups: Vec<String> = Vec::new();
-    // for (i, c) in code.chars().enumerate() {
-    //     let mut group = c.to_string();
-    //     group = find_group(i + 1, code, group);
-
-    //     if group.len() > 1 {
-    //         groups.push(group);
-    //     }
-    // }
 
     let mut i = 0;
     loop {
