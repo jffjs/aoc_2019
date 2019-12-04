@@ -1,15 +1,9 @@
 use crate::util::read_input;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader};
 
 type Coord = (i32, i32);
-type Grid = HashMap<Coord, Vec<usize>>;
-
-enum Point {
-    Wire1,
-    Wire2,
-    Intersect,
-}
+type Grid = HashMap<Coord, HashSet<usize>>;
 
 #[derive(Debug)]
 enum Segment {
@@ -27,9 +21,9 @@ impl Segment {
                 let distance = distance.parse::<i32>().unwrap();
                 match c {
                     'U' => Segment::U(distance),
-                    'D' => Segment::D(-distance),
+                    'D' => Segment::D(distance),
                     'R' => Segment::R(distance),
-                    'L' => Segment::L(-distance),
+                    'L' => Segment::L(distance),
                     _ => panic!("Unknown segment type"),
                 }
             }
@@ -45,6 +39,7 @@ pub fn day_3() {
     let mut grid = Grid::new();
 
     for (wire, line_) in reader.lines().enumerate() {
+        let wire = wire + 1;
         let line = line_.unwrap();
         let path: Vec<Segment> = line
             .trim()
@@ -55,19 +50,44 @@ pub fn day_3() {
         let mut position: Coord = (0, 0);
 
         for segment in path.iter() {
-            position = match segment {
-                Segment::U(y) | Segment::D(y) => (position.0, position.1 + y),
-                Segment::R(x) | Segment::L(x) => (position.0 + x, position.1),
-            };
-
-            grid.entry(position)
-                .and_modify(|wires| wires.push(wire + 1))
-                .or_insert(vec![wire + 1]);
+            match segment {
+                Segment::U(y) => {
+                    let x = position.0;
+                    let sy = position.1;
+                    for dy in 1..=*y {
+                        mark_grid(&mut grid, (x, sy + dy), wire);
+                    }
+                    position = (x, sy + y);
+                }
+                Segment::D(y) => {
+                    let x = position.0;
+                    let sy = position.1;
+                    for dy in 1..=*y {
+                        mark_grid(&mut grid, (x, sy - dy), wire);
+                    }
+                    position = (x, sy - y);
+                }
+                Segment::R(x) => {
+                    let sx = position.0;
+                    let y = position.1;
+                    for dx in 1..=*x {
+                        mark_grid(&mut grid, (sx + dx, y), wire);
+                    }
+                    position = (sx + x, y);
+                }
+                Segment::L(x) => {
+                    let sx = position.0;
+                    let y = position.1;
+                    for dx in 1..=*x {
+                        mark_grid(&mut grid, (sx - dx, y), wire);
+                    }
+                    position = (sx - x, y);
+                }
+            }
         }
     }
 
-    println!("{:?}", grid);
-
+    // Part 1
     let mut shortest_distance: i32 = 999_999;
     for (pos, wires) in grid.iter() {
         if wires.len() > 1 {
@@ -78,5 +98,17 @@ pub fn day_3() {
         }
     }
 
-    println!("Day 3: {}", shortest_distance);
+    println!("Day 3-1: {}", shortest_distance);
+
+    // Part 2
+}
+
+fn mark_grid(grid: &mut Grid, pos: Coord, wire: usize) {
+    if let Some(set) = grid.get_mut(&pos) {
+        set.insert(wire);
+    } else {
+        let mut set = HashSet::new();
+        set.insert(wire);
+        grid.insert(pos, set);
+    }
 }
