@@ -4,6 +4,7 @@ use std::collections::VecDeque;
 enum Mode {
     Position,
     Immediate,
+    Relative,
 }
 
 struct Intcode(u32);
@@ -15,6 +16,7 @@ impl Intcode {
         match (self.0 / place) % 10 {
             0 => Mode::Position,
             1 => Mode::Immediate,
+            2 => Mode::Relative,
             _ => panic!("Invalid mode in Intcode({})", self.0),
         }
     }
@@ -25,19 +27,32 @@ impl Intcode {
 }
 
 pub struct IntcodeComputer {
-    memory: Vec<i32>,
+    memory: Vec<isize>,
     pc: usize,
-    input_buffer: VecDeque<i32>,
-    pub output_buffer: Vec<i32>,
+    relative_base: isize,
+    input_buffer: VecDeque<isize>,
+    pub output_buffer: Vec<isize>,
     pub blocked: bool,
     pub halted: bool,
 }
 
 impl IntcodeComputer {
     pub fn new(mem: &String) -> IntcodeComputer {
+        let mut memory: Vec<isize> = mem
+            .trim()
+            .split(',')
+            .map(|code| code.parse::<isize>().unwrap())
+            .collect();
+
+        // Allocate additional memory at end
+        for _ in 0..memory.len() * 100 {
+            memory.push(0);
+        }
+
         IntcodeComputer {
-            memory: init_program(mem),
+            memory,
             pc: 0,
+            relative_base: 0,
             input_buffer: VecDeque::new(),
             output_buffer: Vec::new(),
             blocked: false,
@@ -45,7 +60,7 @@ impl IntcodeComputer {
         }
     }
 
-    pub fn input(&mut self, value: i32) {
+    pub fn input(&mut self, value: isize) {
         self.input_buffer.push_back(value);
     }
 
@@ -63,65 +78,70 @@ impl IntcodeComputer {
 
             match intcode.op() {
                 1 => {
-                    let val1 = read_value(&intcode, 1, self.pc, &self.memory);
-                    let val2 = read_value(&intcode, 2, self.pc, &self.memory);
-                    let pos = self.memory[self.pc + 3] as usize;
+                    let val1 = self.read_value(&intcode, 1);
+                    let val2 = self.read_value(&intcode, 2);
+                    let pos = self.read_addr(&intcode, 3);
                     self.memory[pos] = val1 + val2;
                     self.pc += 4;
                 }
                 2 => {
-                    let val1 = read_value(&intcode, 1, self.pc, &self.memory);
-                    let val2 = read_value(&intcode, 2, self.pc, &self.memory);
-                    let pos = self.memory[self.pc + 3] as usize;
+                    let val1 = self.read_value(&intcode, 1);
+                    let val2 = self.read_value(&intcode, 2);
+                    let pos = self.read_addr(&intcode, 3);
                     self.memory[pos] = val1 * val2;
                     self.pc += 4;
                 }
                 3 => {
-                    let pos = self.memory[self.pc + 1] as usize;
+                    // let pos = self.memory[self.pc + 1] as usize;
+                    let addr = self.read_addr(&intcode, 1);
                     if let Some(input) = self.input_buffer.pop_front() {
-                        self.memory[pos] = input;
+                        self.memory[addr as usize] = input;
                         self.pc += 2;
                     } else {
                         self.blocked = true;
                     }
                 }
                 4 => {
-                    let value = read_value(&intcode, 1, self.pc, &self.memory);
+                    let value = self.read_value(&intcode, 1);
                     self.output_buffer.push(value);
                     self.pc += 2;
                 }
                 5 => {
-                    let test = read_value(&intcode, 1, self.pc, &self.memory);
+                    let test = self.read_value(&intcode, 1);
                     if test != 0 {
-                        self.pc = read_value(&intcode, 2, self.pc, &self.memory) as usize;
+                        self.pc = self.read_value(&intcode, 2) as usize;
                     } else {
                         self.pc += 3;
                     }
                 }
                 6 => {
-                    let test = read_value(&intcode, 1, self.pc, &self.memory);
+                    let test = self.read_value(&intcode, 1);
                     if test == 0 {
-                        self.pc = read_value(&intcode, 2, self.pc, &self.memory) as usize;
+                        self.pc = self.read_value(&intcode, 2) as usize;
                     } else {
                         self.pc += 3;
                     }
                 }
                 7 => {
-                    let val1 = read_value(&intcode, 1, self.pc, &self.memory);
-                    let val2 = read_value(&intcode, 2, self.pc, &self.memory);
-                    let pos = self.memory[self.pc + 3] as usize;
+                    let val1 = self.read_value(&intcode, 1);
+                    let val2 = self.read_value(&intcode, 2);
+                    let pos = self.read_addr(&intcode, 3);
                     self.memory[pos] = if val1 < val2 { 1 } else { 0 };
                     self.pc += 4;
                 }
                 8 => {
-                    let val1 = read_value(&intcode, 1, self.pc, &self.memory);
-                    let val2 = read_value(&intcode, 2, self.pc, &self.memory);
-                    let pos = self.memory[self.pc + 3] as usize;
+                    let val1 = self.read_value(&intcode, 1);
+                    let val2 = self.read_value(&intcode, 2);
+                    let pos = self.read_addr(&intcode, 3);
                     self.memory[pos] = if val1 == val2 { 1 } else { 0 };
                     self.pc += 4;
                 }
+                9 => {
+                    let value = self.read_value(&intcode, 1);
+                    self.relative_base += value;
+                    self.pc += 2;
+                }
                 99 => {
-                    // println!("id: {} halted", self.id);
                     self.halted = true;
                 }
                 _ => panic!(
@@ -131,13 +151,39 @@ impl IntcodeComputer {
             }
         }
     }
+
+    fn read_addr(&mut self, intcode: &Intcode, param: usize) -> usize {
+        match intcode.mode(param as u32) {
+            Mode::Position => self.memory[self.pc + param] as usize,
+            Mode::Relative => (self.relative_base + self.memory[self.pc + param]) as usize,
+            Mode::Immediate => panic!("Invalid mode for address"),
+        }
+    }
+
+    fn read_value(&mut self, intcode: &Intcode, param: usize) -> isize {
+        match intcode.mode(param as u32) {
+            Mode::Position => self.memory[self.memory[self.pc + param] as usize],
+            Mode::Immediate => self.memory[self.pc + param],
+            Mode::Relative => {
+                self.memory[(self.relative_base + self.memory[self.pc + param]) as usize]
+            }
+        }
+    }
 }
 
 pub fn init_program(data: &String) -> Vec<i32> {
-    data.trim()
+    let mut memory: Vec<i32> = data
+        .trim()
         .split(',')
         .map(|code| code.parse::<i32>().unwrap())
-        .collect()
+        .collect();
+
+    // Allocate additional memory at end
+    for _ in 0..memory.len() * 3 {
+        memory.push(0);
+    }
+
+    memory
 }
 
 pub fn run_program(program: &mut Vec<i32>, input: &Vec<i32>) -> Vec<i32> {
@@ -214,10 +260,11 @@ pub fn run_program(program: &mut Vec<i32>, input: &Vec<i32>) -> Vec<i32> {
     output
 }
 
-fn read_value(intcode: &Intcode, param: u32, pc: usize, program: &Vec<i32>) -> i32 {
-    match intcode.mode(param) {
-        Mode::Position => program[program[pc + param as usize] as usize],
-        Mode::Immediate => program[pc + param as usize],
+fn read_value(intcode: &Intcode, param: usize, pc: usize, program: &Vec<i32>) -> i32 {
+    match intcode.mode(param as u32) {
+        Mode::Position => program[program[pc + param] as usize],
+        Mode::Immediate => program[pc + param],
+        Mode::Relative => unimplemented!(),
     }
 }
 
@@ -227,9 +274,9 @@ mod test {
 
     #[test]
     fn test_intcode_mode() {
-        let intcode = Intcode(1002);
+        let intcode = Intcode(1202);
 
-        assert_eq!(intcode.mode(1), Mode::Position);
+        assert_eq!(intcode.mode(1), Mode::Relative);
         assert_eq!(intcode.mode(2), Mode::Immediate);
         assert_eq!(intcode.mode(3), Mode::Position);
     }

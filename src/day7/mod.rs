@@ -14,11 +14,11 @@ pub fn day_7() {
     let sequences = phase_sequences(0, 4);
     let mut max_output = 0;
     for phase_seq in sequences.iter() {
-        let output_a = run_amplifier_program(phase_seq[0] as i32, 0, &buf);
-        let output_b = run_amplifier_program(phase_seq[1] as i32, output_a, &buf);
-        let output_c = run_amplifier_program(phase_seq[2] as i32, output_b, &buf);
-        let output_d = run_amplifier_program(phase_seq[3] as i32, output_c, &buf);
-        let output_e = run_amplifier_program(phase_seq[4] as i32, output_d, &buf);
+        let output_a = run_amplifier_program(phase_seq[0] as isize, 0, &buf);
+        let output_b = run_amplifier_program(phase_seq[1] as isize, output_a, &buf);
+        let output_c = run_amplifier_program(phase_seq[2] as isize, output_b, &buf);
+        let output_d = run_amplifier_program(phase_seq[3] as isize, output_c, &buf);
+        let output_e = run_amplifier_program(phase_seq[4] as isize, output_d, &buf);
 
         max_output = std::cmp::max(max_output, output_e);
     }
@@ -30,20 +30,20 @@ pub fn day_7() {
     let mut max_output = 0;
     for phase_seq in sequences.iter() {
         let mut amp_a = IntcodeComputer::new(&buf);
-        amp_a.input(phase_seq[0] as i32);
+        amp_a.input(phase_seq[0] as isize);
         amp_a.input(0);
 
         let mut amp_b = IntcodeComputer::new(&buf);
-        amp_b.input(phase_seq[1] as i32);
+        amp_b.input(phase_seq[1] as isize);
 
         let mut amp_c = IntcodeComputer::new(&buf);
-        amp_c.input(phase_seq[2] as i32);
+        amp_c.input(phase_seq[2] as isize);
 
         let mut amp_d = IntcodeComputer::new(&buf);
-        amp_d.input(phase_seq[3] as i32);
+        amp_d.input(phase_seq[3] as isize);
 
         let mut amp_e = IntcodeComputer::new(&buf);
-        amp_e.input(phase_seq[4] as i32);
+        amp_e.input(phase_seq[4] as isize);
 
         loop {
             if amp_a.halted && amp_b.halted && amp_c.halted && amp_d.halted && amp_e.halted {
@@ -72,7 +72,7 @@ pub fn day_7() {
     println!("Day 7-2: {}", max_output);
 }
 
-fn run_amplifier_program(phase: i32, input: i32, memory: &String) -> i32 {
+fn run_amplifier_program(phase: isize, input: isize, memory: &String) -> isize {
     let mut cpu = IntcodeComputer::new(memory);
     cpu.input(phase);
     cpu.input(input);

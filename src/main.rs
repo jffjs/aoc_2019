@@ -6,7 +6,8 @@ extern crate aoc_2019;
 // use aoc_2019::day5::day_5;
 // use aoc_2019::day6::day_6;
 // use aoc_2019::day7::day_7;
-use aoc_2019::day8::day_8;
+// use aoc_2019::day8::day_8;
+use aoc_2019::day9::day_9;
 
 fn main() {
     // day_1();
@@ -16,5 +17,6 @@ fn main() {
     // day_5();
     // day_6();
     // day_7();
-    day_8();
+    // day_8();
+    day_9();
 }
