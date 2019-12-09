@@ -29,20 +29,20 @@ pub fn day_7() {
     let sequences = phase_sequences(5, 9);
     let mut max_output = 0;
     for phase_seq in sequences.iter() {
-        let mut amp_a = IntcodeComputer::new("a".to_owned(), &buf);
+        let mut amp_a = IntcodeComputer::new(&buf);
         amp_a.input(phase_seq[0] as i32);
         amp_a.input(0);
 
-        let mut amp_b = IntcodeComputer::new("b".to_owned(), &buf);
+        let mut amp_b = IntcodeComputer::new(&buf);
         amp_b.input(phase_seq[1] as i32);
 
-        let mut amp_c = IntcodeComputer::new("c".to_owned(), &buf);
+        let mut amp_c = IntcodeComputer::new(&buf);
         amp_c.input(phase_seq[2] as i32);
 
-        let mut amp_d = IntcodeComputer::new("d".to_owned(), &buf);
+        let mut amp_d = IntcodeComputer::new(&buf);
         amp_d.input(phase_seq[3] as i32);
 
-        let mut amp_e = IntcodeComputer::new("e".to_owned(), &buf);
+        let mut amp_e = IntcodeComputer::new(&buf);
         amp_e.input(phase_seq[4] as i32);
 
         loop {
@@ -73,7 +73,7 @@ pub fn day_7() {
 }
 
 fn run_amplifier_program(phase: i32, input: i32, memory: &String) -> i32 {
-    let mut cpu = IntcodeComputer::new("cpu".to_owned(), memory);
+    let mut cpu = IntcodeComputer::new(memory);
     cpu.input(phase);
     cpu.input(input);
     cpu.run();

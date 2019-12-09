@@ -25,7 +25,6 @@ impl Intcode {
 }
 
 pub struct IntcodeComputer {
-    id: String,
     memory: Vec<i32>,
     pc: usize,
     input_buffer: VecDeque<i32>,
@@ -35,9 +34,8 @@ pub struct IntcodeComputer {
 }
 
 impl IntcodeComputer {
-    pub fn new(id: String, mem: &String) -> IntcodeComputer {
+    pub fn new(mem: &String) -> IntcodeComputer {
         IntcodeComputer {
-            id,
             memory: init_program(mem),
             pc: 0,
             input_buffer: VecDeque::new(),
