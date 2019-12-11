@@ -1,6 +1,7 @@
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Point {
-    x: isize,
-    y: isize,
+    pub x: isize,
+    pub y: isize,
 }
 
 pub type Line = Vec<Point>;
@@ -68,5 +69,15 @@ pub fn plot_line(x0: isize, y0: isize, x1: isize, y1: isize) -> Line {
         } else {
             plot_line_high(x0, y0, x1, y1)
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_plot_line() {
+        println!("{:?}", plot_line(0, 1, 6, 4));
     }
 }
